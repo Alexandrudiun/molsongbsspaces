@@ -88,11 +88,7 @@ export const updateBookingFromDesk = async (req, res) => {
                 details: error.message 
             });
         }
-        
-        res.status(500).json({ 
-            error: 'Failed to update booking status',
-            details: error.message 
-        });
+
     }
 };
 
