@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { createUserModel } from '../schemas/user.schema.js';
+import { createDeskModel } from '../schemas/desk.schema.js';
 
 export const getAllUsers = async (req, res) => {
     const User = createUserModel(req.app.locals.usersDB);
@@ -145,6 +146,29 @@ export const updateUserImage = async (req, res) => {
             success: false,
             message: 'Error updating user image',
             error: error.message
+        });
+    }
+};
+
+export const getDesksWhereUserIsAttendee = async (req, res) => {
+    const Desk = createDeskModel(req.app.locals.desksDB);
+    try {
+        const desks = await Desk.find({
+            'bookings.attendees': req.user.userId
+        });
+
+        const bookings = desks.map((desk) => desk.bookings);
+
+        res.status(200).json({ 
+            status: 200, 
+            message: 'Desks retrieved successfully', 
+            data: bookings,
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            status: 500, 
+            message: 'Error retrieving desks', 
+            error: error.message 
         });
     }
 };
