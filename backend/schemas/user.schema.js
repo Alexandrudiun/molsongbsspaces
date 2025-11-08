@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Name is required'],
     trim: true
   },
-  image: { type: String },
+  image: { type: String, default: "" },
   role: { 
     type: String, 
     enum: ['admin', 'manager', 'user'], 

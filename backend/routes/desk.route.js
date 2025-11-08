@@ -6,7 +6,8 @@ import {
     updateDesk, 
     deleteDesk,
     handleReservationRequest,
-    checkBookingAvailability
+    checkBookingAvailability,
+    createDesk,
 } from '../crud/desk.crud.js';
 
 
@@ -22,12 +23,15 @@ router.get("/", authenticate, (req, res) => {
 });
 
 // Example: Only managers and admins can create desks
-router.post("/", authenticate, authorize('manager', 'admin'), (req, res) => {
-    return res.status(200).json({ 
-        success: true,
-        message: "Create desk endpoint (manager/admin only)" 
-    });
-});
+// router.post("/", authenticate, authorize('manager', 'admin'), (req, res) => {
+//     return res.status(200).json({ 
+//         success: true,
+//         message: "Create desk endpoint (manager/admin only)" 
+//     });
+// });
+
+// Create desk
+router.post("/", authenticate, /*authorize('manager', 'admin'), */ createDesk);
 
 // Get all desks
 router.get("/all", authenticate, getAllDesks);

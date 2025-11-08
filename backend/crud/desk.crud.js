@@ -1,5 +1,15 @@
 import { createDeskModel } from '../schemas/desk.schema.js';
 
+export const createDesk = async (req, res) => {
+    const Desk = createDeskModel(req.app.locals.desksDB);
+    try {
+        const desk = await Desk.create(req.body);
+        res.status(201).json({ status: 201, message: 'Desk created successfully', data: desk });
+    } catch (error) {
+        res.status(500).json({ status: 500, message: 'Error creating desk', error: error.message });
+    }
+};
+
 export const getAllDesks = async (req, res) => {
     const Desk = createDeskModel(req.app.locals.desksDB);
     try {
