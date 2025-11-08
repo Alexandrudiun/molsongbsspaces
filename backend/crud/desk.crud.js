@@ -1,7 +1,7 @@
 import { createDeskModel } from '../schemas/desk.schema.js';
 
 export const getAllDesks = async (req, res) => {
-    const Desk = createDeskModel(req.app.locals.deskDB);
+    const Desk = createDeskModel(req.app.locals.desksDB);
     try {
         const desks = await Desk.find().populate('bookings');
         res.status(200).json({ status: 200, message: 'Desks retrieved successfully', data: desks });
@@ -11,7 +11,7 @@ export const getAllDesks = async (req, res) => {
 };
 
 export const getDeskById = async (req, res) => {
-    const Desk = createDeskModel(req.app.locals.deskDB);
+    const Desk = createDeskModel(req.app.locals.desksDB);
     try {
         const desk = await Desk.findById(req.params.deskId).populate('bookings');
         if (!desk) return res.status(404).json({ status: 404, message: 'Desk not found' });
@@ -22,7 +22,7 @@ export const getDeskById = async (req, res) => {
 };
 
 export const updateDesk = async (req, res) => {
-    const Desk = createDeskModel(req.app.locals.deskDB);
+    const Desk = createDeskModel(req.app.locals.desksDB);
     try {
         const desk = await Desk.findByIdAndUpdate(req.params.deskId, req.body, { new: true });
         if (!desk) return res.status(404).json({ status: 404, message: 'Desk not found' });
@@ -33,7 +33,7 @@ export const updateDesk = async (req, res) => {
 };
 
 export const deleteDesk = async (req, res) => {
-    const Desk = createDeskModel(req.app.locals.deskDB);
+    const Desk = createDeskModel(req.app.locals.desksDB);
     try {
         const desk = await Desk.findByIdAndDelete(req.params.deskId);
         if (!desk) return res.status(404).json({ status: 404, message: 'Desk not found' });
@@ -44,7 +44,7 @@ export const deleteDesk = async (req, res) => {
 };
 
 export const handleReservationRequest = async (req, res) => {
-    const Desk = createDeskModel(req.app.locals.deskDB);
+    const Desk = createDeskModel(req.app.locals.desksDB);
     const { deskId, bookingId, accept } = req.params;
     try {
         const desk = await Desk.findById(deskId);
@@ -63,7 +63,7 @@ export const handleReservationRequest = async (req, res) => {
 };
 
 export const checkBookingAvailability = async (req, res) => {
-    const Desk = createDeskModel(req.app.locals.deskDB);
+    const Desk = createDeskModel(req.app.locals.desksDB);
     const { deskId, start, end } = req.params;
     try {
         const desk = await Desk.findById(deskId);

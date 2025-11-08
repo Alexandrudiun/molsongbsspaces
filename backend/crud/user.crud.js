@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { createUserModel } from '../schemas/user.schema.js';
 
 export const getAllUsers = async (req, res) => {
-    const User = createUserModel(req.app.locals.userDB);
+    const User = createUserModel(req.app.locals.usersDB);
     try {
         const users = await User.find().select('-password');
         res.status(200).json({
@@ -19,7 +19,7 @@ export const getAllUsers = async (req, res) => {
 };
 
 export const getUserById = async (req, res) => {
-    const User = createUserModel(req.app.locals.userDB);
+    const User = createUserModel(req.app.locals.usersDB);
     try {
         const user = await User.findById(req.params.id).select('-password');
         if (!user) {
@@ -42,7 +42,7 @@ export const getUserById = async (req, res) => {
 };
 
 export const createUser = async (req, res) => {
-    const User = createUserModel(req.app.locals.userDB);
+    const User = createUserModel(req.app.locals.usersDB);
     try {
         const user = await User.create(req.body);
         res.status(201).json({
@@ -59,7 +59,7 @@ export const createUser = async (req, res) => {
 };
 
 export const updateUser = async (req, res) => {
-    const User = createUserModel(req.app.locals.userDB);
+    const User = createUserModel(req.app.locals.usersDB);
     try {
         const user = await User.findByIdAndUpdate(
             req.params.id,
@@ -88,7 +88,7 @@ export const updateUser = async (req, res) => {
 };
 
 export const deleteUser = async (req, res) => {
-    const User = createUserModel(req.app.locals.userDB);
+    const User = createUserModel(req.app.locals.usersDB);
     try {
         const user = await User.findByIdAndDelete(req.params.id);
         
@@ -113,9 +113,9 @@ export const deleteUser = async (req, res) => {
 };
 
 export const updateUserImage = async (req, res) => {
-    const User = createUserModel(req.app.locals.userDB);
+    const User = createUserModel(req.app.locals.usersDB);
     try {
-        if (!req.body.image) {
+        if (!req.params.image) {
             return res.status(400).json({
                 success: false,
                 message: 'No image provided'
@@ -124,7 +124,7 @@ export const updateUserImage = async (req, res) => {
 
         const user = await User.findByIdAndUpdate(
             req.params.id,
-            { image: req.body.image },
+            { image: req.params.image },
             { new: true, runValidators: true }
         ).select('-password');
 

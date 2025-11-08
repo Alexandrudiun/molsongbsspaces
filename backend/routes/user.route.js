@@ -24,7 +24,7 @@ router.post('/', authenticate, authorize('admin'), createUser);
 router.put('/:id', authenticate, updateUser);
 
 // Update user image - admin or the user themselves
-router.put('/:id/image', authenticate, updateUserImage);
+router.put('/:id/:image', authenticate, updateUserImage);
 
 // Delete user - admin only
 router.delete('/:id', authenticate, authorize('admin'), deleteUser);
