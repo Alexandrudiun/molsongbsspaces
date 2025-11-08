@@ -1,10 +1,12 @@
 import express from 'express';
-import { getUserById } from '../crud/user';
+import { getUserById } from '../crud/user.js';
 
 const router = express.Router();
 
-// GET /user/:id - Retrieve user by ID
-// use the function from above
+router.get("/", (req, res) => {
+    return res.status(200).json({ message: "User route is working" });
+});
+
 router.get("/:id", getUserById);
 
 export default router;
