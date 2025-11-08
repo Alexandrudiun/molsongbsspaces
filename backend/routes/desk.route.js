@@ -1,5 +1,13 @@
 import express from 'express';
 import { authenticate, authorize } from '../middleware/auth.middleware.js';
+import { 
+    getAllDesks, 
+    getDeskById, 
+    updateDesk, 
+    deleteDesk,
+    handleReservationRequest,
+    checkBookingAvailability
+} from '../controllers/desk.crud.js';
 
 
 const router = express.Router();
@@ -20,6 +28,24 @@ router.post("/", authenticate, authorize('manager', 'admin'), (req, res) => {
         message: "Create desk endpoint (manager/admin only)" 
     });
 });
+
+// Get all desks
+router.get("/all", authenticate, getAllDesks);
+
+// Get a specific desk by ID
+router.get("/:id", authenticate, getDeskById);
+
+// Update a desk by ID
+router.put("/:id", authenticate, authorize('manager', 'admin'), updateDesk);
+
+// Delete a desk by ID
+router.delete("/:id", authenticate, authorize('manager', 'admin'), deleteDesk);
+
+// Handle reservation request
+router.post("/:id/reservation", authenticate, authorize('manager', 'admin'), handleReservationRequest);
+
+// Check booking availability
+router.get("/:id/availability", authenticate, checkBookingAvailability);
 
 export default router;
 
