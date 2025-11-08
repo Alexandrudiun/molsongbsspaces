@@ -4,8 +4,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import desksRouter from './routes/desk.js';
-import userRouter from './routes/user.js';
+import router from './routes/router.js';
 
 dotenv.config();
 
@@ -54,8 +53,7 @@ app.get('/api/health', (req, res) => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 // App routes
-app.use('/desk', desksRouter);
-app.use('/user', userRouter);
+app.use('/', router);
 
 // Handle React routing - return index.html for all non-API routes
 app.use((req, res) => {

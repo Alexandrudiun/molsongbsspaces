@@ -1,5 +1,5 @@
 import express from 'express';
-import { getUserById } from '../crud/user.js';
+import { getUserById } from '../crud/user.crud.js';
 
 const router = express.Router();
 
