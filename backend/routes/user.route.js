@@ -1,13 +1,29 @@
 import express from 'express';
-import { getUserById } from '../crud/user.crud.js';
+import { authenticate, authorize } from '../middleware/auth.middleware.js';
+import {
+    getAllUsers,
+    getUserById,
+    createUser,
+    updateUser,
+    deleteUser
+} from '../crud/user.crud.js';
 
 const router = express.Router();
 
-router.get("/", (req, res) => {
-    return res.status(200).json({ message: "User route is working" });
-});
+// Get all users - admin only
+router.get('/all', authenticate, authorize('admin'), getAllUsers);
 
-router.get("/:id", getUserById);
+// Get user by ID - admin or the user themselves
+router.get('/:id', authenticate, getUserById);
+
+// Create new user - admin only
+router.post('/', authenticate, authorize('admin'), createUser);
+
+// Update user - admin or the user themselves
+router.put('/:id', authenticate, updateUser);
+
+// Delete user - admin only
+router.delete('/:id', authenticate, authorize('admin'), deleteUser);
 
 export default router;
 
