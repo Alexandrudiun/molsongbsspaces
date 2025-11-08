@@ -6,7 +6,7 @@ import deskRouter from './desk.route.js';
 const router = express.Router();
 
 router.use('/auth', authRouter);
-router.use('/login', userRouter);
+router.use('/user', userRouter);
 router.use('/desk', deskRouter);
 
 // Health check

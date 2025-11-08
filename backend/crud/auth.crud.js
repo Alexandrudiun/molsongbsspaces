@@ -12,6 +12,16 @@ const generateToken = (userId, email, role) => {
 
 export const register = async (req, res) => {
     try {
+        console.log('Register request body:', req.body);
+        console.log('Content-Type:', req.headers['content-type']);
+        
+        if (!req.body || Object.keys(req.body).length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Request body is empty. Please send JSON data with Content-Type: application/json'
+            });
+        }
+        
         const registerRequest = new RegisterRequest(req.body);
         const validation = registerRequest.validate();
 

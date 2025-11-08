@@ -1,17 +1,19 @@
-import { Schema, Model } from "mongoose";
+import mongoose from "mongoose";
 
 // Define Desk Schema
-const deskSchema = new Schema({
+const deskSchema = new mongoose.Schema({
   locationId: { type: String, required: true },
   bookings: [{
     start: { type: Date, required: true },
     end: { type: Date, required: true },
     status: { type: String, enum: ['created', 'pending', 'accepted', 'cancelled'], required: true },
-    attendees: [{ type: Schema.Types.ObjectId, ref: 'User' }]
+    attendees: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
   }],
 });
 
-// Create Desk Model
-const Desk = new Model('Desk', deskSchema);
+// Create model from connection
+export const createDeskModel = (connection) => {
+    return connection.model('Desk', deskSchema);
+};
 
-export default Desk;
+export default deskSchema;
