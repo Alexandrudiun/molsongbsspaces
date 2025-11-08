@@ -30,6 +30,7 @@ app.use('/api', router);
 // Serve static files from React build AFTER API routes
 app.use(express.static(path.join(__dirname, 'public/dist')));
 
+
 // Handle React routing - return index.html for all non-API routes
 app.use((req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
