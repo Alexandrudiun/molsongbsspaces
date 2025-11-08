@@ -5,7 +5,8 @@ import {
     getUserById,
     createUser,
     updateUser,
-    deleteUser
+    deleteUser,
+    updateUserImage
 } from '../crud/user.crud.js';
 
 const router = express.Router();
@@ -21,6 +22,9 @@ router.post('/', authenticate, authorize('admin'), createUser);
 
 // Update user - admin or the user themselves
 router.put('/:id', authenticate, updateUser);
+
+// Update user image - admin or the user themselves
+router.put('/:id/image', authenticate, updateUserImage);
 
 // Delete user - admin only
 router.delete('/:id', authenticate, authorize('admin'), deleteUser);

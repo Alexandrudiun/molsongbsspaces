@@ -109,3 +109,39 @@ export const deleteUser = async (req, res) => {
         });
     }
 };
+
+export const updateUserImage = async (req, res) => {
+    try {
+        if (!req.body.image) {
+            return res.status(400).json({
+                success: false,
+                message: 'No image provided'
+            });
+        }
+
+        const user = await User.findByIdAndUpdate(
+            req.params.id,
+            { image: req.body.image },
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'User image updated successfully',
+            data: user
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error updating user image',
+            error: error.message
+        });
+    }
+};
