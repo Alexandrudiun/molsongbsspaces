@@ -14,7 +14,7 @@ import {
 const router = express.Router();
 
 // Get all desks where the user is an attendee
-router.get('/my-bookings', authenticate, authorize('user', 'admin'), getDesksWhereUserIsAttendee);
+router.get('/my-bookings', authenticate, authorize('user', 'manager', 'admin'), getDesksWhereUserIsAttendee);
 
 // Get all users - admin only
 router.get('/all', authenticate, authorize('admin'), getAllUsers);

@@ -210,8 +210,7 @@ export const getAllPositionsOfUser = async (req, res) => {
     const Desk = createDeskModel(req.app.locals.desksDB);
     const User = createUserModel(req.app.locals.usersDB);
 
-    const { userId, timestamp } = req.body;
-    const queryTime = new Date(timestamp);
+    const { userId } = req.body;
 
     try {
         const user = await User.findById(userId);
@@ -223,29 +222,13 @@ export const getAllPositionsOfUser = async (req, res) => {
         }
 
         const desks = await Desk.find({
-            'bookings.attendees': userId, 
-            'bookings.status': 'accepted',
+            'bookings.attendees': userId,
         });
-
-        const validDesks = desks.map(desk => {
-            // Create a copy of the desk as a plain object
-            const deskObj = desk.toObject();
-            
-            // Filter bookings to only keep valid ones
-            deskObj.bookings = deskObj.bookings.filter(booking => 
-                booking.status === 'accepted' &&
-                booking.start <= queryTime && 
-                booking.end >= queryTime &&
-                booking.attendees.some(attendeeId => attendeeId.toString() === userId)
-            );
-
-            return deskObj;
-        }).filter(desk => desk.bookings.length > 0); // Only keep desks that have valid bookings
 
         res.status(200).json({ 
             status: 200, 
-            message: 'Found valid locations for user at given time', 
-            data: validDesks,
+            message: 'Found valid locations for user', 
+            data: desks,
         });
     } catch (error) {
         res.status(500).json({ 
