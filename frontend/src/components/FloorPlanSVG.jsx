@@ -1,13 +1,17 @@
 import { useState, useEffect } from "react";
 import BookingModal from "./BookingModal";
+import { table } from "framer-motion/client";
 
 const FloorPlanSVG = () => {
   const [hoveredSection, setHoveredSection] = useState(null);
   const [selectedSection, setSelectedSection] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [bookings, setBookings] = useState([]);
+  const [desks, setDesks] = useState([]); // Store all desk data
+  const [loadingDesks, setLoadingDesks] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null); // Store current user data
 
-  // Update current time every minute
+  // Update current time every second for real-time updates
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -16,24 +20,96 @@ const FloorPlanSVG = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch bookings (mock data for now)
+  // Fetch current user data from backend API
   useEffect(() => {
-    // Mock bookings - replace with API call
-    const mockBookings = [
-      {
-        section: "Center",
-        date: "2025-11-08",
-        startTime: "09:00",
-        endTime: "12:00",
-      },
-      {
-        section: "Work Tables UP",
-        date: "2025-11-08",
-        startTime: "14:00",
-        endTime: "17:00",
-      },
-    ];
-    setBookings(mockBookings);
+    const fetchUserData = async () => {
+      try {
+        // Get userId from the user object stored in localStorage
+        const userStr = localStorage.getItem('user');
+        const token = localStorage.getItem('token');
+        
+        if (!userStr || !token) {
+          console.warn('⚠️ No user or token found in localStorage');
+          return;
+        }
+
+        const user = JSON.parse(userStr);
+        const userId = user._id || user.id;
+
+        console.log('🔄 Fetching user data from backend for userId:', userId);
+        
+        const response = await fetch(`https://molsongbsspaces.onrender.com/api/user/${userId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch user: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('✅ Fetched user data:', data);
+        
+        // Handle if data is wrapped in a 'data' property
+        const userData = data.data || data;
+        setCurrentUser(userData);
+      } catch (error) {
+        console.error('❌ Error fetching user:', error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  // Fetch all desks from backend API
+  useEffect(() => {
+    const fetchDesks = async () => {
+      try {
+        setLoadingDesks(true);
+        console.log('🔄 Fetching all desks from backend...');
+        
+        const token = localStorage.getItem('token');
+        const headers = {
+          'Content-Type': 'application/json',
+        };
+
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch('https://molsongbsspaces.onrender.com/api/desk/all', {
+          method: 'GET',
+          headers: headers,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch desks: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('✅ Fetched desks data:', data);
+        
+        // Handle if data is wrapped in a 'data' property
+        const desksData = data.data || data;
+        setDesks(Array.isArray(desksData) ? desksData : []);
+        console.log(`✅ Loaded ${Array.isArray(desksData) ? desksData.length : 0} desks`);
+      } catch (error) {
+        console.error('❌ Error fetching desks:', error);
+        setDesks([]);
+      } finally {
+        setLoadingDesks(false);
+      }
+    };
+
+    fetchDesks();
+    
+    // Refresh desk data every 30 seconds for live updates
+    const refreshInterval = setInterval(fetchDesks, 30000);
+    
+    return () => clearInterval(refreshInterval);
   }, []);
 
   // Define sections with their boundaries and colors
@@ -42,30 +118,52 @@ const FloorPlanSVG = () => {
       color: "#10b981",
       hoverColor: "#059669",
     },
-    Center: {
-      color: "#3b82f6",
-      hoverColor: "#2563eb",
-    },
     "Bubble Rooms": {
       color: "#8b5cf6",
       hoverColor: "#7c3aed",
     },
-    // individual bubble rooms - give each a distinct color
-    "bubble room 1": {
+    // individual Bubble rooms - give each a distinct color
+    "Bubble Room1": {
       color: "#60a5fa", // blue
       hoverColor: "#2563eb",
     },
-    "bubble room 2": {
+    "Bubble Room2": {
       color: "#34d399", // green
       hoverColor: "#059669",
     },
-    "bubble room 3": {
+    "Bubble Room3": {
       color: "#f97316", // orange
       hoverColor: "#ea580c",
     },
-    "bubble room 4": {
+    "Bubble Room4": {
       color: "#f472b6", // pink
       hoverColor: "#db2777",
+    },
+    // additional Bubble rooms
+    "Bubble Room5": {
+      color: "#a78bfa", // purple
+      hoverColor: "#7c3aed",
+    },
+    "Bubble Room6": {
+      color: "#fb7185", // rose
+      hoverColor: "#f43f5e",
+    },
+    // Cubicles
+    "Cubicle 1": {
+      color: "#fbbf24",
+      hoverColor: "#f59e0b",
+    },
+    "Cubicle 2": {
+      color: "#38bdf8",
+      hoverColor: "#0ea5e9",
+    },
+    "Cubicle 3": {
+      color: "#fca5a5",
+      hoverColor: "#f87171",
+    },
+    "Cubicle 4": {
+      color: "#c084fc",
+      hoverColor: "#a78bfa",
     },
     ManagementOffice3: {
       color: "#f59e0b",
@@ -78,10 +176,6 @@ const FloorPlanSVG = () => {
     ManagementOffice1: {
       color: "#06b6d4",
       hoverColor: "#0891b2",
-    },
-    "Training Office": {
-      color: "#14b8a6",
-      hoverColor: "#0d9488",
     },
     "Work Tables UP": {
       color: "#f97316",
@@ -102,7 +196,384 @@ const FloorPlanSVG = () => {
     },
   };
 
+  // UP Tables (Cannot be automated because offsets aren't consistent :( )
+  const tableUpData = [
+    { id: 'A_Table1.M1', x: 516, y: 88, width: 44, height: 49 },
+    { id: 'A_Table1.M2', x: 516, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table1.M3', x: 516, y: 88 + 49 * 2, width: 44, height: 49 },
+    { id: 'A_Table1.M4', x: 516 + 44, y: 88, width: 44, height: 49 },
+    { id: 'A_Table1.M5', x: 516 + 44, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table1.M6', x: 516 + 44, y: 88 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'A_Table2.M1', x: 516 + 88 + 43, y: 88, width: 44, height: 49 },
+    { id: 'A_Table2.M2', x: 516 + 88 + 43, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table2.M3', x: 516 + 88 + 43, y: 88 + 49 * 2, width: 44, height: 49 },
+    { id: 'A_Table2.M4', x: 516 + 44 + 88 + 43, y: 88, width: 44, height: 49 },
+    { id: 'A_Table2.M5', x: 516 + 44 + 88 + 43, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table2.M6', x: 516 + 44 + 88 + 43, y: 88 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'A_Table3.M1', x: 516 + 88 * 2 + 95, y: 88, width: 44, height: 49 },
+    { id: 'A_Table3.M2', x: 516 + 88 * 2 + 95, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table3.M3', x: 516 + 88 * 2 + 95, y: 88 + 49 * 2, width: 44, height: 49 },
+    { id: 'A_Table3.M4', x: 516 + 44 + 88 * 2 + 95, y: 88, width: 44, height: 49 },
+    { id: 'A_Table3.M5', x: 516 + 44 + 88 * 2 + 95, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table3.M6', x: 516 + 44 + 88 * 2 + 95, y: 88 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'A_Table4.M1', x: 516 + 88 * 3 + 137, y: 88, width: 44, height: 49 },
+    { id: 'A_Table4.M2', x: 516 + 88 * 3 + 137, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table4.M3', x: 516 + 88 * 3 + 137, y: 88 + 49 * 2, width: 44, height: 49 },
+    { id: 'A_Table4.M4', x: 516 + 44 + 88 * 3 + 137, y: 88, width: 44, height: 49 },
+    { id: 'A_Table4.M5', x: 516 + 44 + 88 * 3 + 137, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table4.M6', x: 516 + 44 + 88 * 3 + 137, y: 88 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'A_Table5.M1', x: 516 + 88 * 4 + 189, y: 88, width: 44, height: 49 },
+    { id: 'A_Table5.M2', x: 516 + 88 * 4 + 189, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table5.M3', x: 516 + 88 * 4 + 189, y: 88 + 49 * 2, width: 44, height: 49 },
+    { id: 'A_Table5.M4', x: 516 + 44 + 88 * 4 + 189, y: 88, width: 44, height: 49 },
+    { id: 'A_Table5.M5', x: 516 + 44 + 88 * 4 + 189, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table5.M6', x: 516 + 44 + 88 * 4 + 189, y: 88 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'A_Table6.M1', x: 516 + 88 * 5 + 231, y: 88, width: 44, height: 49 },
+    { id: 'A_Table6.M2', x: 516 + 88 * 5 + 231, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table6.M3', x: 516 + 88 * 5 + 231, y: 88 + 49 * 2, width: 44, height: 49 },
+    { id: 'A_Table6.M4', x: 516 + 44 + 88 * 5 + 231, y: 88, width: 44, height: 49 },
+    { id: 'A_Table6.M5', x: 516 + 44 + 88 * 5 + 231, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table6.M6', x: 516 + 44 + 88 * 5 + 231, y: 88 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'A_Table7.M1', x: 516 + 88 * 6 + 283, y: 88, width: 44, height: 49 },
+    { id: 'A_Table7.M2', x: 516 + 88 * 6 + 283, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table7.M3', x: 516 + 88 * 6 + 283, y: 88 + 49 * 2, width: 44, height: 49 },
+    { id: 'A_Table7.M4', x: 516 + 44 + 88 * 6 + 283, y: 88, width: 44, height: 49 },
+    { id: 'A_Table7.M5', x: 516 + 44 + 88 * 6 + 283, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table7.M6', x: 516 + 44 + 88 * 6 + 283, y: 88 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'A_Table8.M1', x: 516 + 88 * 7 + 325, y: 88, width: 44, height: 49 },
+    { id: 'A_Table8.M2', x: 516 + 88 * 7 + 325, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table8.M3', x: 516 + 88 * 7 + 325, y: 88 + 49 * 2, width: 44, height: 49 },
+    { id: 'A_Table8.M4', x: 516 + 44 + 88 * 7 + 325, y: 88, width: 44, height: 49 },
+    { id: 'A_Table8.M5', x: 516 + 44 + 88 * 7 + 325, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table8.M6', x: 516 + 44 + 88 * 7 + 325, y: 88 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'A_Table9.M1', x: 1748, y: 88, width: 44, height: 49 },
+    { id: 'A_Table9.M2', x: 1748, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table9.M3', x: 1748, y: 88 + 49 * 2, width: 44, height: 49 },
+    { id: 'A_Table9.M4', x: 1748 + 44, y: 88, width: 44, height: 49 },
+    { id: 'A_Table9.M5', x: 1748 + 44, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table9.M6', x: 1748 + 44, y: 88 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'A_Table10.M1', x: 1748 + 88 + 43, y: 88, width: 44, height: 49 },
+    { id: 'A_Table10.M2', x: 1748 + 88 + 43, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table10.M3', x: 1748 + 88 + 43, y: 88 + 49 * 2, width: 44, height: 49 },
+    { id: 'A_Table10.M4', x: 1748 + 44 + 88 + 43, y: 88, width: 44, height: 49 },
+    { id: 'A_Table10.M5', x: 1748 + 44 + 88 + 43, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table10.M6', x: 1748 + 44 + 88 + 43, y: 88 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'A_Table11.M1', x: 1748 + 88 * 2 + 95, y: 88, width: 44, height: 49 },
+    { id: 'A_Table11.M2', x: 1748 + 88 * 2 + 95, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table11.M3', x: 1748 + 88 * 2 + 95, y: 88 + 49 * 2, width: 44, height: 49 },
+    { id: 'A_Table11.M4', x: 1748 + 44 + 88 * 2 + 95, y: 88, width: 44, height: 49 },
+    { id: 'A_Table11.M5', x: 1748 + 44 + 88 * 2 + 95, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table11.M6', x: 1748 + 44 + 88 * 2 + 95, y: 88 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'A_Table12.M1', x: 1748 + 88 * 3 + 137, y: 88, width: 44, height: 49 },
+    { id: 'A_Table12.M2', x: 1748 + 88 * 3 + 137, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table12.M3', x: 1748 + 88 * 3 + 137, y: 88 + 49 * 2, width: 44, height: 49 },
+    { id: 'A_Table12.M4', x: 1748 + 44 + 88 * 3 + 137, y: 88, width: 44, height: 49 },
+    { id: 'A_Table12.M5', x: 1748 + 44 + 88 * 3 + 137, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table12.M6', x: 1748 + 44 + 88 * 3 + 137, y: 88 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'A_Table13.M1', x: 1748 + 88 * 4 + 189, y: 88, width: 44, height: 49 },
+    { id: 'A_Table13.M2', x: 1748 + 88 * 4 + 189, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table13.M3', x: 1748 + 88 * 4 + 189, y: 88 + 49 * 2, width: 44, height: 49 },
+    { id: 'A_Table13.M4', x: 1748 + 44 + 88 * 4 + 189, y: 88, width: 44, height: 49 },
+    { id: 'A_Table13.M5', x: 1748 + 44 + 88 * 4 + 189, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table13.M6', x: 1748 + 44 + 88 * 4 + 189, y: 88 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'A_Table14.M1', x: 1748 + 88 * 5 + 231, y: 88, width: 44, height: 49 },
+    { id: 'A_Table14.M2', x: 1748 + 88 * 5 + 231, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table14.M3', x: 1748 + 88 * 5 + 231, y: 88 + 49 * 2, width: 44, height: 49 },
+    { id: 'A_Table14.M4', x: 1748 + 44 + 88 * 5 + 231, y: 88, width: 44, height: 49 },
+    { id: 'A_Table14.M5', x: 1748 + 44 + 88 * 5 + 231, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table14.M6', x: 1748 + 44 + 88 * 5 + 231, y: 88 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'A_Table15.M1', x: 1748 + 88 * 6 + 283, y: 88, width: 44, height: 49 },
+    { id: 'A_Table15.M2', x: 1748 + 88 * 6 + 283, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table15.M3', x: 1748 + 88 * 6 + 283, y: 88 + 49 * 2, width: 44, height: 49 },
+    { id: 'A_Table15.M4', x: 1748 + 44 + 88 * 6 + 283, y: 88, width: 44, height: 49 },
+    { id: 'A_Table15.M5', x: 1748 + 44 + 88 * 6 + 283, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table15.M6', x: 1748 + 44 + 88 * 6 + 283, y: 88 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'A_Table16.M1', x: 1748 + 88 * 7 + 325, y: 88, width: 44, height: 49 },
+    { id: 'A_Table16.M2', x: 1748 + 88 * 7 + 325, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table16.M3', x: 1748 + 88 * 7 + 325, y: 88 + 49 * 2, width: 44, height: 49 },
+    { id: 'A_Table16.M4', x: 1748 + 44 + 88 * 7 + 325, y: 88, width: 44, height: 49 },
+    { id: 'A_Table16.M5', x: 1748 + 44 + 88 * 7 + 325, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table16.M6', x: 1748 + 44 + 88 * 7 + 325, y: 88 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'A_Table17.M1', x: 1748 + 88 * 8 + 377, y: 88, width: 44, height: 49 },
+    { id: 'A_Table17.M2', x: 1748 + 88 * 8 + 377, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table17.M3', x: 1748 + 88 * 8 + 377, y: 88 + 49 * 2, width: 44, height: 49 },
+    { id: 'A_Table17.M4', x: 1748 + 44 + 88 * 8 + 377, y: 88, width: 44, height: 49 },
+    { id: 'A_Table17.M5', x: 1748 + 44 + 88 * 8 + 377, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table17.M6', x: 1748 + 44 + 88 * 8 + 377, y: 88 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'A_Table18.M1', x: 1748 + 88 * 9 + 416, y: 88, width: 44, height: 49 },
+    { id: 'A_Table18.M2', x: 1748 + 88 * 9 + 416, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table18.M3', x: 1748 + 88 * 9 + 416, y: 88 + 49 * 2, width: 44, height: 49 },
+    { id: 'A_Table18.M4', x: 1748 + 44 + 88 * 9 + 416, y: 88, width: 44, height: 49 },
+    { id: 'A_Table18.M5', x: 1748 + 44 + 88 * 9 + 416, y: 88 + 49, width: 44, height: 49 },
+    { id: 'A_Table18.M6', x: 1748 + 44 + 88 * 9 + 416, y: 88 + 49 * 2, width: 44, height: 49 },
+  ];
+
+  const tableDownData = [
+    { id: 'B_Table1.M1', x: 516, y: 798, width: 44, height: 49 },
+    { id: 'B_Table1.M2', x: 516, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table1.M3', x: 516, y: 798 + 49 * 2, width: 44, height: 49 },
+    { id: 'B_Table1.M4', x: 516 + 44, y: 798, width: 44, height: 49 },
+    { id: 'B_Table1.M5', x: 516 + 44, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table1.M6', x: 516 + 44, y: 798 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'B_Table2.M1', x: 516 + 88 + 43, y: 798, width: 44, height: 49 },
+    { id: 'B_Table2.M2', x: 516 + 88 + 43, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table2.M3', x: 516 + 88 + 43, y: 798 + 49 * 2, width: 44, height: 49 },
+    { id: 'B_Table2.M4', x: 516 + 44 + 88 + 43, y: 798, width: 44, height: 49 },
+    { id: 'B_Table2.M5', x: 516 + 44 + 88 + 43, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table2.M6', x: 516 + 44 + 88 + 43, y: 798 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'B_Table3.M1', x: 516 + 88 * 2 + 95, y: 798, width: 44, height: 49 },
+    { id: 'B_Table3.M2', x: 516 + 88 * 2 + 95, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table3.M3', x: 516 + 88 * 2 + 95, y: 798 + 49 * 2, width: 44, height: 49 },
+    { id: 'B_Table3.M4', x: 516 + 44 + 88 * 2 + 95, y: 798, width: 44, height: 49 },
+    { id: 'B_Table3.M5', x: 516 + 44 + 88 * 2 + 95, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table3.M6', x: 516 + 44 + 88 * 2 + 95, y: 798 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'B_Table4.M1', x: 516 + 88 * 3 + 137, y: 798, width: 44, height: 49 },
+    { id: 'B_Table4.M2', x: 516 + 88 * 3 + 137, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table4.M3', x: 516 + 88 * 3 + 137, y: 798 + 49 * 2, width: 44, height: 49 },
+    { id: 'B_Table4.M4', x: 516 + 44 + 88 * 3 + 137, y: 798, width: 44, height: 49 },
+    { id: 'B_Table4.M5', x: 516 + 44 + 88 * 3 + 137, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table4.M6', x: 516 + 44 + 88 * 3 + 137, y: 798 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'B_Table5.M1', x: 516 + 88 * 4 + 189, y: 798, width: 44, height: 49 },
+    { id: 'B_Table5.M2', x: 516 + 88 * 4 + 189, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table5.M3', x: 516 + 88 * 4 + 189, y: 798 + 49 * 2, width: 44, height: 49 },
+    { id: 'B_Table5.M4', x: 516 + 44 + 88 * 4 + 189, y: 798, width: 44, height: 49 },
+    { id: 'B_Table5.M5', x: 516 + 44 + 88 * 4 + 189, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table5.M6', x: 516 + 44 + 88 * 4 + 189, y: 798 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'B_Table6.M1', x: 516 + 88 * 5 + 231, y: 798, width: 44, height: 49 },
+    { id: 'B_Table6.M2', x: 516 + 88 * 5 + 231, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table6.M3', x: 516 + 88 * 5 + 231, y: 798 + 49 * 2, width: 44, height: 49 },
+    { id: 'B_Table6.M4', x: 516 + 44 + 88 * 5 + 231, y: 798, width: 44, height: 49 },
+    { id: 'B_Table6.M5', x: 516 + 44 + 88 * 5 + 231, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table6.M6', x: 516 + 44 + 88 * 5 + 231, y: 798 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'B_Table7.M1', x: 516 + 88 * 6 + 283, y: 798, width: 44, height: 49 },
+    { id: 'B_Table7.M2', x: 516 + 88 * 6 + 283, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table7.M3', x: 516 + 88 * 6 + 283, y: 798 + 49 * 2, width: 44, height: 49 },
+    { id: 'B_Table7.M4', x: 516 + 44 + 88 * 6 + 283, y: 798, width: 44, height: 49 },
+    { id: 'B_Table7.M5', x: 516 + 44 + 88 * 6 + 283, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table7.M6', x: 516 + 44 + 88 * 6 + 283, y: 798 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'B_Table8.M1', x: 516 + 88 * 7 + 325, y: 798, width: 44, height: 49 },
+    { id: 'B_Table8.M2', x: 516 + 88 * 7 + 325, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table8.M3', x: 516 + 88 * 7 + 325, y: 798 + 49 * 2, width: 44, height: 49 },
+    { id: 'B_Table8.M4', x: 516 + 44 + 88 * 7 + 325, y: 798, width: 44, height: 49 },
+    { id: 'B_Table8.M5', x: 516 + 44 + 88 * 7 + 325, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table8.M6', x: 516 + 44 + 88 * 7 + 325, y: 798 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'B_Table9.M1', x: 1748, y: 798, width: 44, height: 49 },
+    { id: 'B_Table9.M2', x: 1748, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table9.M3', x: 1748, y: 798 + 49 * 2, width: 44, height: 49 },
+    { id: 'B_Table9.M4', x: 1748 + 44, y: 798, width: 44, height: 49 },
+    { id: 'B_Table9.M5', x: 1748 + 44, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table9.M6', x: 1748 + 44, y: 798 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'B_Table10.M1', x: 1748 + 88 + 43, y: 798, width: 44, height: 49 },
+    { id: 'B_Table10.M2', x: 1748 + 88 + 43, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table10.M3', x: 1748 + 88 + 43, y: 798 + 49 * 2, width: 44, height: 49 },
+    { id: 'B_Table10.M4', x: 1748 + 44 + 88 + 43, y: 798, width: 44, height: 49 },
+    { id: 'B_Table10.M5', x: 1748 + 44 + 88 + 43, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table10.M6', x: 1748 + 44 + 88 + 43, y: 798 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'B_Table11.M1', x: 1748 + 88 * 2 + 95, y: 798, width: 44, height: 49 },
+    { id: 'B_Table11.M2', x: 1748 + 88 * 2 + 95, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table11.M3', x: 1748 + 88 * 2 + 95, y: 798 + 49 * 2, width: 44, height: 49 },
+    { id: 'B_Table11.M4', x: 1748 + 44 + 88 * 2 + 95, y: 798, width: 44, height: 49 },
+    { id: 'B_Table11.M5', x: 1748 + 44 + 88 * 2 + 95, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table11.M6', x: 1748 + 44 + 88 * 2 + 95, y: 798 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'B_Table12.M1', x: 1748 + 88 * 3 + 137, y: 798, width: 44, height: 49 },
+    { id: 'B_Table12.M2', x: 1748 + 88 * 3 + 137, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table12.M3', x: 1748 + 88 * 3 + 137, y: 798 + 49 * 2, width: 44, height: 49 },
+    { id: 'B_Table12.M4', x: 1748 + 44 + 88 * 3 + 137, y: 798, width: 44, height: 49 },
+    { id: 'B_Table12.M5', x: 1748 + 44 + 88 * 3 + 137, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table12.M6', x: 1748 + 44 + 88 * 3 + 137, y: 798 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'B_Table13.M1', x: 1748 + 88 * 4 + 189, y: 798, width: 44, height: 49 },
+    { id: 'B_Table13.M2', x: 1748 + 88 * 4 + 189, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table13.M3', x: 1748 + 88 * 4 + 189, y: 798 + 49 * 2, width: 44, height: 49 },
+    { id: 'B_Table13.M4', x: 1748 + 44 + 88 * 4 + 189, y: 798, width: 44, height: 49 },
+    { id: 'B_Table13.M5', x: 1748 + 44 + 88 * 4 + 189, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table13.M6', x: 1748 + 44 + 88 * 4 + 189, y: 798 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'B_Table14.M1', x: 1748 + 88 * 5 + 231, y: 798, width: 44, height: 49 },
+    { id: 'B_Table14.M2', x: 1748 + 88 * 5 + 231, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table14.M3', x: 1748 + 88 * 5 + 231, y: 798 + 49 * 2, width: 44, height: 49 },
+    { id: 'B_Table14.M4', x: 1748 + 44 + 88 * 5 + 231, y: 798, width: 44, height: 49 },
+    { id: 'B_Table14.M5', x: 1748 + 44 + 88 * 5 + 231, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table14.M6', x: 1748 + 44 + 88 * 5 + 231, y: 798 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'B_Table15.M1', x: 1748 + 88 * 6 + 283, y: 798, width: 44, height: 49 },
+    { id: 'B_Table15.M2', x: 1748 + 88 * 6 + 283, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table15.M3', x: 1748 + 88 * 6 + 283, y: 798 + 49 * 2, width: 44, height: 49 },
+    { id: 'B_Table15.M4', x: 1748 + 44 + 88 * 6 + 283, y: 798, width: 44, height: 49 },
+    { id: 'B_Table15.M5', x: 1748 + 44 + 88 * 6 + 283, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table15.M6', x: 1748 + 44 + 88 * 6 + 283, y: 798 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'B_Table16.M1', x: 1748 + 88 * 7 + 325, y: 798, width: 44, height: 49 },
+    { id: 'B_Table16.M2', x: 1748 + 88 * 7 + 325, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table16.M3', x: 1748 + 88 * 7 + 325, y: 798 + 49 * 2, width: 44, height: 49 },
+    { id: 'B_Table16.M4', x: 1748 + 44 + 88 * 7 + 325, y: 798, width: 44, height: 49 },
+    { id: 'B_Table16.M5', x: 1748 + 44 + 88 * 7 + 325, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table16.M6', x: 1748 + 44 + 88 * 7 + 325, y: 798 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'B_Table17.M1', x: 1748 + 88 * 8 + 377, y: 798, width: 44, height: 49 },
+    { id: 'B_Table17.M2', x: 1748 + 88 * 8 + 377, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table17.M3', x: 1748 + 88 * 8 + 377, y: 798 + 49 * 2, width: 44, height: 49 },
+    { id: 'B_Table17.M4', x: 1748 + 44 + 88 * 8 + 377, y: 798, width: 44, height: 49 },
+    { id: 'B_Table17.M5', x: 1748 + 44 + 88 * 8 + 377, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table17.M6', x: 1748 + 44 + 88 * 8 + 377, y: 798 + 49 * 2, width: 44, height: 49 },
+
+    { id: 'B_Table18.M1', x: 1748 + 88 * 9 + 416, y: 798, width: 44, height: 49 },
+    { id: 'B_Table18.M2', x: 1748 + 88 * 9 + 416, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table18.M3', x: 1748 + 88 * 9 + 416, y: 798 + 49 * 2, width: 44, height: 49 },
+    { id: 'B_Table18.M4', x: 1748 + 44 + 88 * 9 + 416, y: 798, width: 44, height: 49 },
+    { id: 'B_Table18.M5', x: 1748 + 44 + 88 * 9 + 416, y: 798 + 49, width: 44, height: 49 },
+    { id: 'B_Table18.M6', x: 1748 + 44 + 88 * 9 + 416, y: 798 + 49 * 2, width: 44, height: 49 },
+  ];
+
+  // Check if a desk/table is available based on real-time backend data
+  const isDeskAvailable = (deskId) => {
+    if (loadingDesks) return true; // Show as available while loading
+    
+    // Find the desk in our fetched data
+    // Backend uses locationId like "A_Table2_M2", we use "Table 2 UP"
+    const desk = desks.find(d => {
+      // Try exact match first
+      if (d.name === deskId || d.id === deskId || d._id === deskId) return true;
+      
+      // Try locationId match
+      if (d.locationId) {
+        // Extract table number from our format: "Table 2 UP" -> 2
+        const match = deskId.match(/Table (\d+) (UP|DOWN)/);
+        if (match) {
+          const tableNum = match[1];
+          const section = match[2];
+          
+          // Backend format: "A_Table2_M2" or similar
+          // Check if locationId contains the table number
+          const locationMatch = d.locationId.toLowerCase().includes(`table${tableNum}`.toLowerCase());
+          
+          if (locationMatch) {
+            console.log(`✅ Matched "${deskId}" to desk:`, d);
+            return true;
+          }
+        }
+      }
+      
+      return false;
+    });
+    
+    if (!desk) {
+      // Desk not found in backend, assume available
+      console.log(`⚠️ Desk not found for: ${deskId}`);
+      return true;
+    }
+
+    console.log(`🔍 Checking availability for ${deskId}:`, desk);
+
+    const now = new Date();
+    console.log(`⏰ Current time: ${now.toISOString()} (${now.getTime()})`);
+    
+    // Check attendances (primary - current format from backend)
+    if (desk.attendances && desk.attendances.length > 0) {
+      console.log(`📋 Found ${desk.attendances.length} attendances for ${deskId}:`, desk.attendances);
+      
+      const hasActiveAttendance = desk.attendances.some(attendance => {
+        console.log(`\n--- Checking attendance ---`);
+        console.log(`Status: ${attendance.status}`);
+        console.log(`Raw start: ${attendance.start}`);
+        console.log(`Raw end: ${attendance.end}`);
+        
+        // Check if attendance is pending or active
+        if (attendance.status === 'pending' || attendance.status === 'active') {
+          const attendanceStart = new Date(attendance.start);
+          const attendanceEnd = attendance.end ? new Date(attendance.end) : null;
+          
+          console.log(`Parsed start: ${attendanceStart.toISOString()} (${attendanceStart.getTime()})`);
+          console.log(`Parsed end: ${attendanceEnd ? attendanceEnd.toISOString() + ' (' + attendanceEnd.getTime() + ')' : 'null'}`);
+          console.log(`Current: ${now.toISOString()} (${now.getTime()})`);
+          
+          // If there's a start time but no end time, it's currently occupied
+          if (!attendanceEnd) {
+            const isOccupied = now >= attendanceStart;
+            console.log(`✅ No end time - Comparing: now (${now.getTime()}) >= start (${attendanceStart.getTime()}) = ${isOccupied}`);
+            return isOccupied;
+          }
+          
+          // Check if current time is within attendance period
+          const nowIsAfterStart = now >= attendanceStart;
+          const nowIsBeforeEnd = now <= attendanceEnd;
+          const isActive = nowIsAfterStart && nowIsBeforeEnd;
+          
+          console.log(`📊 Comparison:`);
+          console.log(`  now >= start: ${now.getTime()} >= ${attendanceStart.getTime()} = ${nowIsAfterStart}`);
+          console.log(`  now <= end: ${now.getTime()} <= ${attendanceEnd.getTime()} = ${nowIsBeforeEnd}`);
+          console.log(`  Is active: ${isActive}`);
+          
+          return isActive;
+        }
+        console.log(`⏭️ Skipping - status is "${attendance.status}"`);
+        return false;
+      });
+      
+      if (hasActiveAttendance) {
+        console.log(`\n❌ FINAL RESULT: ${deskId} is OCCUPIED\n`);
+        return false; // Occupied
+      } else {
+        console.log(`\n✅ No active attendance found for ${deskId}\n`);
+      }
+    }
+    
+    // Check bookings (fallback - legacy format)
+    if (desk.bookings && desk.bookings.length > 0) {
+      const hasActiveBooking = desk.bookings.some(booking => {
+        const bookingStart = new Date(booking.startTime || booking.start);
+        const bookingEnd = new Date(booking.endTime || booking.end);
+        
+        // Check if current time is within booking period
+        return now >= bookingStart && now <= bookingEnd;
+      });
+      
+      if (hasActiveBooking) return false; // Booked
+    }
+
+    console.log(`✅ ${deskId} is AVAILABLE`);
+    return true; // Available if no active attendance or booking
+  };
+
+  // Legacy function for sections (non-table areas)
   const isAvailable = (sectionName) => {
+    // For individual tables, use the new desk availability check
+    if (sectionName.includes('Table') && sectionName.includes('UP')) {
+      return isDeskAvailable(sectionName);
+    }
+    if (sectionName.includes('Table') && sectionName.includes('DOWN')) {
+      return isDeskAvailable(sectionName);
+    }
+
+    // For other sections, use old logic
     const currentHour = currentTime.getHours();
     const currentDate = currentTime.toISOString().split("T")[0];
 
@@ -115,6 +586,110 @@ const FloorPlanSVG = () => {
     );
 
     return !sectionBooking;
+  };
+
+  // Get detailed booking information for a desk
+  const getDeskInfo = (deskId) => {
+    // Use same matching logic as isDeskAvailable
+    const desk = desks.find(d => {
+      // Try exact match first
+      if (d.name === deskId || d.id === deskId || d._id === deskId) return true;
+      
+      // Try locationId match
+      if (d.locationId) {
+        // Extract table number from our format: "Table 2 UP" -> 2
+        const match = deskId.match(/Table (\d+) (UP|DOWN)/);
+        if (match) {
+          const tableNum = match[1];
+          
+          // Backend format: "A_Table2_M2" or similar
+          const locationMatch = d.locationId.toLowerCase().includes(`table${tableNum}`.toLowerCase());
+          
+          if (locationMatch) return true;
+        }
+      }
+      
+      return false;
+    });
+    
+    if (!desk) {
+      console.log(`⚠️ getDeskInfo: Desk not found for ${deskId}`);
+      return {
+        name: deskId,
+        status: 'Unknown',
+        available: true,
+        attendances: [],
+        bookings: []
+      };
+    }
+
+    console.log(`📊 getDeskInfo for ${deskId}:`, desk);
+
+    const now = new Date();
+    let currentBooking = null;
+    let nextBooking = null;
+    let currentAttendance = null;
+    let nextAttendance = null;
+
+    // Check attendances first (primary format)
+    if (desk.attendances && desk.attendances.length > 0) {
+      // Find current active attendance
+      currentAttendance = desk.attendances.find(attendance => {
+        if (attendance.status === 'pending' || attendance.status === 'active') {
+          const attendanceStart = new Date(attendance.start);
+          const attendanceEnd = attendance.end ? new Date(attendance.end) : null;
+          
+          if (!attendanceEnd) {
+            return now >= attendanceStart;
+          }
+          
+          return now >= attendanceStart && now <= attendanceEnd;
+        }
+        return false;
+      });
+
+      // Find next upcoming attendance
+      const upcomingAttendances = desk.attendances
+        .filter(attendance => {
+          const attendanceStart = new Date(attendance.start);
+          return attendanceStart > now;
+        })
+        .sort((a, b) => new Date(a.start) - new Date(b.start));
+      
+      nextAttendance = upcomingAttendances[0];
+    }
+
+    // Check bookings (fallback format)
+    if (desk.bookings && desk.bookings.length > 0) {
+      // Find current active booking
+      currentBooking = desk.bookings.find(booking => {
+        const bookingStart = new Date(booking.startTime || booking.start);
+        const bookingEnd = new Date(booking.endTime || booking.end);
+        return now >= bookingStart && now <= bookingEnd;
+      });
+
+      // Find next upcoming booking
+      const upcomingBookings = desk.bookings
+        .filter(booking => new Date(booking.startTime || booking.start) > now)
+        .sort((a, b) => new Date(a.startTime || a.start) - new Date(b.startTime || b.start));
+      
+      nextBooking = upcomingBookings[0];
+    }
+
+    // Prioritize attendance over booking
+    const activeItem = currentAttendance || currentBooking;
+    const upcomingItem = nextAttendance || nextBooking;
+
+    return {
+      name: desk.name || deskId,
+      id: desk._id,
+      status: activeItem ? 'Occupied' : 'Available',
+      available: !activeItem,
+      currentBooking: activeItem,
+      nextBooking: upcomingItem,
+      allBookings: [...(desk.attendances || []), ...(desk.bookings || [])],
+      isAttendance: !!currentAttendance
+    };
   };
 
   const getSectionColor = (sectionName) => {
@@ -141,111 +716,178 @@ const FloorPlanSVG = () => {
   };
 
   const handleBookingConfirm = async (bookingData) => {
-    // Here you would make an API call to save the booking
-    console.log("Booking data:", bookingData);
+    try {
+      console.log("📤 Booking data:", bookingData);
+      console.log("📤 All desks:", desks);
 
-    // Update local bookings state
-    setBookings([...bookings, bookingData]);
+      // Get the desk from our desks array to find the backend desk ID
+      const desk = desks.find(d => {
+        console.log(`🔍 Checking desk:`, d);
+        
+        // Try direct locationId match first (e.g., "A_Table2.M1")
+        if (d.locationId === bookingData.deskId || d.locationId === bookingData.section) {
+          console.log(`✅ Direct locationId match!`);
+          return true;
+        }
+        
+        // Try direct ID match
+        if (d._id === bookingData.deskId || d.id === bookingData.deskId) {
+          console.log(`✅ Direct ID match!`);
+          return true;
+        }
+        
+        // Try matching "Table X UP/DOWN" format to locationId
+        if (d.locationId) {
+          const match = bookingData.section.match(/Table (\d+) (UP|DOWN)/);
+          if (match) {
+            const tableNum = match[1];
+            const locationMatch = d.locationId.toLowerCase().includes(`table${tableNum}`.toLowerCase());
+            if (locationMatch) {
+              console.log(`✅ Pattern match for Table ${tableNum}!`);
+              return true;
+            }
+          }
+        }
+        
+        return false;
+      });
 
-    // Close modal
-    setSelectedSection(null);
+      if (!desk) {
+        console.error('❌ Could not find desk. Searched for:', {
+          deskId: bookingData.deskId,
+          section: bookingData.section
+        });
+        alert('Could not find desk in backend. Please try again.');
+        return;
+      }
 
-    // Show success message
-    alert(`Booking confirmed for ${bookingData.section}!`);
+      const backendDeskId = desk._id || desk.id;
+      console.log("📍 Found desk ID:", backendDeskId);
+
+      // Combine date and time into ISO format (UTC)
+      // The backend expects UTC times with Z suffix
+      // Format: "2025-11-08T23:00:00Z"
+      
+      // Handle times that cross midnight (00:00, 00:30 are next day)
+      const startHour = parseInt(bookingData.startTime.split(':')[0]);
+      const endHour = parseInt(bookingData.endTime.split(':')[0]);
+      
+      let startDate = bookingData.date;
+      let endDate = bookingData.date;
+      
+      // If end time is 00:00 or 00:30, it's the next day
+      if (endHour === 0) {
+        const nextDay = new Date(bookingData.date);
+        nextDay.setDate(nextDay.getDate() + 1);
+        endDate = nextDay.toISOString().split('T')[0];
+      }
+      
+      const startDateTime = `${startDate}T${bookingData.startTime}:00Z`;
+      const endDateTime = `${endDate}T${bookingData.endTime}:00Z`;
+
+      console.log("📅 Start datetime:", startDateTime);
+      console.log("📅 End datetime:", endDateTime);
+
+      // Validate that end time is after start time
+      const startDateObj = new Date(startDateTime);
+      const endDateObj = new Date(endDateTime);
+      
+      if (endDateObj <= startDateObj) {
+        alert('End time must be after start time!');
+        return;
+      }
+
+      // Get current user ID from the fetched user data, fallback to localStorage
+      let userId;
+      if (currentUser) {
+        userId = currentUser._id || currentUser.id;
+        console.log("👤 Using userId from API:", userId);
+      } else {
+        // Fallback: get from localStorage user object
+        try {
+          const userStr = localStorage.getItem('user');
+          if (userStr) {
+            const user = JSON.parse(userStr);
+            userId = user._id || user.id;
+            console.log("👤 Using userId from localStorage user object:", userId);
+          }
+        } catch (error) {
+          console.error("Error parsing user from localStorage:", error);
+        }
+      }
+      
+      if (!userId) {
+        alert('User not found. Please log in again.');
+        return;
+      }
+      
+      const requestBody = {
+        start: startDateTime,
+        end: endDateTime,
+        attendees: [userId]
+      };
+
+      console.log("📤 Sending booking request:", requestBody);
+
+      const token = localStorage.getItem('token');
+      const response = await fetch(`https://molsongbsspaces.onrender.com/api/desk/book/${backendDeskId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to book desk: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log("✅ Booking successful:", result);
+
+      // Update local bookings state
+      setBookings([...bookings, bookingData]);
+
+      // Close modal
+      setSelectedSection(null);
+
+      // Show success message
+      alert(`✅ Booking confirmed for ${bookingData.section}!\nTime: ${bookingData.startTime} - ${bookingData.endTime}`);
+
+      // Refresh desk data to show updated availability
+      // The useEffect will handle this automatically with the 30-second refresh, 
+      // but we can trigger it immediately
+      const fetchDesks = async () => {
+        try {
+          const response = await fetch('https://molsongbsspaces.onrender.com/api/desk/all', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            const desksData = data.data || data;
+            setDesks(Array.isArray(desksData) ? desksData : []);
+          }
+        } catch (error) {
+          console.error('Error refreshing desks:', error);
+        }
+      };
+      fetchDesks();
+
+    } catch (error) {
+      console.error('❌ Error booking desk:', error);
+      alert(`Failed to book desk: ${error.message}`);
+    }
   };
 
   return (
     <>
-      <div
-        style={{
-          width: "100%",
-          maxWidth: "1200px",
-          margin: "0 auto",
-          overflow: "auto",
-          background: "#f8f9fa",
-          borderRadius: "12px",
-          padding: "20px",
-        }}
-      >
-        {/* Legend */}
-        <div
-          style={{
-            background: "white",
-            borderRadius: "8px",
-            padding: "15px",
-            marginBottom: "20px",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-          }}
-        >
-          <h3
-            style={{
-              fontSize: "14px",
-              fontWeight: "bold",
-              marginBottom: "10px",
-              color: "#1a1a1a",
-            }}
-          >
-            Current Time: {currentTime.toLocaleTimeString()} |{" "}
-            {currentTime.toLocaleDateString()}
-          </h3>
-          <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <div
-                style={{
-                  width: "20px",
-                  height: "20px",
-                  background: "#10b981",
-                  borderRadius: "4px",
-                }}
-              ></div>
-              <span style={{ fontSize: "12px", color: "#666" }}>Available</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <div
-                style={{
-                  width: "20px",
-                  height: "20px",
-                  background: "#ef4444",
-                  borderRadius: "4px",
-                }}
-              ></div>
-              <span style={{ fontSize: "12px", color: "#666" }}>Booked</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <div
-                style={{
-                  width: "20px",
-                  height: "20px",
-                  background: "#94a3b8",
-                  borderRadius: "4px",
-                }}
-              ></div>
-              <span style={{ fontSize: "12px", color: "#666" }}>
-                Hover to see area
-              </span>
-            </div>
-            {/* Bubble room legend chips */}
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginLeft: "8px", flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <div style={{ width: "14px", height: "14px", background: "#60a5fa", borderRadius: "3px" }} />
-                <span style={{ fontSize: "12px", color: "#666" }}>Bubble 1</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <div style={{ width: "14px", height: "14px", background: "#34d399", borderRadius: "3px" }} />
-                <span style={{ fontSize: "12px", color: "#666" }}>Bubble 2</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <div style={{ width: "14px", height: "14px", background: "#f97316", borderRadius: "3px" }} />
-                <span style={{ fontSize: "12px", color: "#666" }}>Bubble 3</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <div style={{ width: "14px", height: "14px", background: "#f472b6", borderRadius: "3px" }} />
-                <span style={{ fontSize: "12px", color: "#666" }}>Bubble 4</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
+      <div>
         <div
           style={{
             background: "white",
@@ -257,6 +899,7 @@ const FloorPlanSVG = () => {
             alignItems: "center",
             position: "relative",
           }}
+          className="floor-plan-svg-container"
         >
           <svg
             width="3234"
@@ -265,6 +908,7 @@ const FloorPlanSVG = () => {
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
             style={{ maxWidth: "1200px", width: "100%", height: "auto" }}
+            className="floor-plan-svg"
           >
             <defs>
               <clipPath id="beerPointClip">
@@ -1985,53 +2629,44 @@ const FloorPlanSVG = () => {
 
             {/* Interactive Overlay Rectangles - DO NOT MODIFY SVG ABOVE */}
             
-            {/* Work Tables UP - Top section */}
-            <rect
-              x="516"
-              y="88"
-              width="2529"
-              height="147"
-              fill={getSectionColor("Work Tables UP")}
-              fillOpacity="0.3"
-              stroke={hoveredSection === "Work Tables UP" ? "#1a1a1a" : "transparent"}
-              strokeWidth="3"
-              style={{ cursor: "pointer", transition: "all 0.2s" }}
-              onMouseEnter={() => setHoveredSection("Work Tables UP")}
-              onMouseLeave={() => setHoveredSection(null)}
-              onClick={() => handleSectionClick("Work Tables UP")}
-            />
+            {/* Work Tables UP */}
 
-            {/* Center - Middle section */}
-            <rect
-              x="689"
-              y="315"
-              width="1937"
-              height="404"
-              fill={getSectionColor("Center")}
-              fillOpacity="0.3"
-              stroke={hoveredSection === "Center" ? "#1a1a1a" : "transparent"}
-              strokeWidth="3"
-              style={{ cursor: "pointer", transition: "all 0.2s" }}
-              onMouseEnter={() => setHoveredSection("Center")}
-              onMouseLeave={() => setHoveredSection(null)}
-              onClick={() => handleSectionClick("Center")}
-            />
+            {tableUpData.map(table => (
+              <rect
+                key={table.id}
+                x={table.x}
+                y={table.y}
+                width={table.width}
+                height={table.height}
+                fill={getSectionColor(table.id)}
+                fillOpacity="0.3"
+                stroke={hoveredSection === table.id ? "#1a1a1a" : "transparent"}
+                strokeWidth="3"
+                style={{ cursor: "pointer", transition: "all 0.2s" }}
+                onMouseEnter={() => setHoveredSection(table.id)}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick(table.id)}
+              />
+            ))}
 
-            {/* Work Tables Down - Bottom section */}
-            <rect
-              x="516"
-              y="798"
-              width="2529"
-              height="147"
-              fill={getSectionColor("Work Tables Down")}
-              fillOpacity="0.3"
-              stroke={hoveredSection === "Work Tables Down" ? "#1a1a1a" : "transparent"}
-              strokeWidth="3"
-              style={{ cursor: "pointer", transition: "all 0.2s" }}
-              onMouseEnter={() => setHoveredSection("Work Tables Down")}
-              onMouseLeave={() => setHoveredSection(null)}
-              onClick={() => handleSectionClick("Work Tables Down")}
-            />
+            {/* Work Tables DOWN */}
+            {tableDownData.map(table => (
+              <rect
+                key={table.id}
+                x={table.x}
+                y={table.y}
+                width={table.width}
+                height={table.height}
+                fill={getSectionColor(table.id)}
+                fillOpacity="0.3"
+                stroke={hoveredSection === table.id ? "#1a1a1a" : "transparent"}
+                strokeWidth="3"
+                style={{ cursor: "pointer", transition: "all 0.2s" }}
+                onMouseEnter={() => setHoveredSection(table.id)}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick(table.id)}
+              />
+            ))}
 
             {/* Beer Point*/}
             <path
@@ -2055,68 +2690,68 @@ const FloorPlanSVG = () => {
             >
             </g>
 
-            {/* Bubble Room 1*/}
+            {/* Bubble Room1*/}
             <rect
               x="234"
               y="2"
               width="110"
               height="125" // 250
-              fill={getSectionColor("bubble room 1")}
+              fill={getSectionColor("Bubble Room1")}
               fillOpacity="0.3"
-              stroke={hoveredSection === "bubble room 1" ? "#1a1a1a" : "transparent"}
+              stroke={hoveredSection === "Bubble Room1" ? "#1a1a1a" : "transparent"}
               strokeWidth="3"
               style={{ cursor: "pointer", transition: "all 0.2s" }}
-              onMouseEnter={() => setHoveredSection("bubble room 1")}
+              onMouseEnter={() => setHoveredSection("Bubble Room1")}
               onMouseLeave={() => setHoveredSection(null)}
-              onClick={() => handleSectionClick("bubble room 1")}
+              onClick={() => handleSectionClick("Bubble Room1")}
             />
 
-            {/* Bubble Room 2*/}
+            {/* Bubble Room2*/}
             <rect
               x="234"
               y="127"
               width="110"
               height="125" // 250
-              fill={getSectionColor("bubble room 2")}
+              fill={getSectionColor("Bubble Room2")}
               fillOpacity="0.3"
-              stroke={hoveredSection === "bubble room 2" ? "#1a1a1a" : "transparent"}
+              stroke={hoveredSection === "Bubble Room2" ? "#1a1a1a" : "transparent"}
               strokeWidth="3"
               style={{ cursor: "pointer", transition: "all 0.2s" }}
-              onMouseEnter={() => setHoveredSection("bubble room 2")}
+              onMouseEnter={() => setHoveredSection("Bubble Room2")}
               onMouseLeave={() => setHoveredSection(null)}
-              onClick={() => handleSectionClick("bubble room 2")}
+              onClick={() => handleSectionClick("Bubble Room2")}
             />
 
-            {/* Bubble Room 3*/}
+            {/* Bubble Room3*/}
             <rect
               x="234"
               y="789"
               width="110"
               height="123"
-              fill={getSectionColor("bubble room 3")}
+              fill={getSectionColor("Bubble Room3")}
               fillOpacity="0.3"
-              stroke={hoveredSection === "bubble room 3" ? "#1a1a1a" : "transparent"}
+              stroke={hoveredSection === "Bubble Room3" ? "#1a1a1a" : "transparent"}
               strokeWidth="3"
               style={{ cursor: "pointer", transition: "all 0.2s" }}
-              onMouseEnter={() => setHoveredSection("bubble room 3")}
+              onMouseEnter={() => setHoveredSection("Bubble Room3")}
               onMouseLeave={() => setHoveredSection(null)}
-              onClick={() => handleSectionClick("bubble room 3")}
+              onClick={() => handleSectionClick("Bubble Room3")}
             />
 
-            {/* Bubble Room 4*/}
+            {/* Bubble Room4*/}
             <rect
               x="234"
               y="912" 
               width="110"
               height="123"
-              fill={getSectionColor("bubble room 4")}
+              fill={getSectionColor("Bubble Room4")}
               fillOpacity="0.3"
-              stroke={hoveredSection === "bubble room 4" ? "#1a1a1a" : "transparent"}
+              stroke={hoveredSection === "Bubble Room4" ? "#1a1a1a" : "transparent"}
               strokeWidth="3"
               style={{ cursor: "pointer", transition: "all 0.2s" }}
-              onMouseEnter={() => setHoveredSection("bubble room 4")}
+              onMouseEnter={() => setHoveredSection("Bubble Room4")}
               onMouseLeave={() => setHoveredSection(null)}
-              onClick={() => handleSectionClick("bubble room 4")}
+              onClick={() => handleSectionClick("Bubble Room4")}
             />
 
             {/* Management Office 3 - Far right top */}
@@ -2135,36 +2770,52 @@ const FloorPlanSVG = () => {
               onClick={() => handleSectionClick("ManagementOffice3")}
             />
 
-            {/* Bubble Room 5*/}
+            {/* Bubble Room5*/}
             <rect
               x="3097"
               y="246"
               width="131"
               height="91"
-              fill={getSectionColor("bubble room 5")}
+              fill={getSectionColor("Bubble Room5")}
               fillOpacity="0.3"
-              stroke={hoveredSection === "bubble room 5" ? "#1a1a1a" : "transparent"}
+              stroke={hoveredSection === "Bubble Room5" ? "#1a1a1a" : "transparent"}
               strokeWidth="3"
               style={{ cursor: "pointer", transition: "all 0.2s" }}
-              onMouseEnter={() => setHoveredSection("bubble room 5")}
+              onMouseEnter={() => setHoveredSection("Bubble Room5")}
               onMouseLeave={() => setHoveredSection(null)}
-              onClick={() => handleSectionClick("bubble room 5")}
+              onClick={() => handleSectionClick("Bubble Room5")}
             />
 
-            {/* Training Office - Far right middle */}
+            {/* Training Office 1 - Far right middle */}
             <rect
               x="2847"
               y="337"
-              width="381"
+              width="190"
               height="363"
-              fill={getSectionColor("Training Office")}
+              fill={getSectionColor("Training Office 1")}
               fillOpacity="0.3"
-              stroke={hoveredSection === "Training Office" ? "#1a1a1a" : "transparent"}
+              stroke={hoveredSection === "Training Office 1" ? "#1a1a1a" : "transparent"}
               strokeWidth="3"
               style={{ cursor: "pointer", transition: "all 0.2s" }}
-              onMouseEnter={() => setHoveredSection("Training Office")}
+              onMouseEnter={() => setHoveredSection("Training Office 1")}
               onMouseLeave={() => setHoveredSection(null)}
-              onClick={() => handleSectionClick("Training Office")}
+              onClick={() => handleSectionClick("Training Office 1")}
+            />
+
+            {/* Training Office 2 - Far right middle */}
+            <rect
+              x="3037"
+              y="337"
+              width="190"
+              height="363"
+              fill={getSectionColor("Training Office 2")}
+              fillOpacity="0.3"
+              stroke={hoveredSection === "Training Office 2" ? "#1a1a1a" : "transparent"}
+              strokeWidth="3"
+              style={{ cursor: "pointer", transition: "all 0.2s" }}
+              onMouseEnter={() => setHoveredSection("Training Office 2")}
+              onMouseLeave={() => setHoveredSection(null)}
+              onClick={() => handleSectionClick("Training Office 2")}
             />
 
             {/* Bookster Area */}
@@ -2183,20 +2834,20 @@ const FloorPlanSVG = () => {
               onClick={() => handleSectionClick("Bookster Area")}
             />
 
-            {/* Bubble Room 6 */}
+            {/* Bubble Room6 */}
             <rect
               x="2694"
               y="579"
               width="153"
               height="122"
-              fill={getSectionColor("Bubble Room 6")}
+              fill={getSectionColor("Bubble Room6")}
               fillOpacity="0.3"
-              stroke={hoveredSection === "Bubble Room 6" ? "#1a1a1a" : "transparent"}
+              stroke={hoveredSection === "Bubble Room6" ? "#1a1a1a" : "transparent"}
               strokeWidth="3"
               style={{ cursor: "pointer", transition: "all 0.2s" }}
-              onMouseEnter={() => setHoveredSection("Bubble Room 6")}
+              onMouseEnter={() => setHoveredSection("Bubble Room6")}
               onMouseLeave={() => setHoveredSection(null)}
-              onClick={() => handleSectionClick("Bubble Room 6")}
+              onClick={() => handleSectionClick("Bubble Room6")}
             />
 
             {/* Cubicle 1 - TODO: see if it needs separate hitboxes for chairs*/}
@@ -2231,20 +2882,36 @@ const FloorPlanSVG = () => {
               onClick={() => handleSectionClick("Cubicle 2")}
             />
 
-            {/* */}
+            {/* Cubicle 3 - TODO: see if it needs separate hitboxes for chairs*/}
             <rect
-              x="2847"
-              y="337"
-              width="381"
-              height="363"
-              fill={getSectionColor("Training Office")}
+              x="1604"
+              y="980"
+              width="87"
+              height="48"
+              fill={getSectionColor("Cubicle 3")}
               fillOpacity="0.3"
-              stroke={hoveredSection === "Training Office" ? "#1a1a1a" : "transparent"}
+              stroke={hoveredSection === "Cubicle 3" ? "#1a1a1a" : "transparent"}
               strokeWidth="3"
               style={{ cursor: "pointer", transition: "all 0.2s" }}
-              onMouseEnter={() => setHoveredSection("Training Office")}
+              onMouseEnter={() => setHoveredSection("Cubicle 3")}
               onMouseLeave={() => setHoveredSection(null)}
-              onClick={() => handleSectionClick("Training Office")}
+              onClick={() => handleSectionClick("Cubicle 3")}
+            />
+
+            {/* Cubicle 4 - TODO: see if it needs separate hitboxes for chairs*/}
+            <rect
+              x="1605"
+              y="155"
+              width="87"
+              height="48"
+              fill={getSectionColor("Cubicle 4")}
+              fillOpacity="0.3"
+              stroke={hoveredSection === "Cubicle 4" ? "#1a1a1a" : "transparent"}
+              strokeWidth="3"
+              style={{ cursor: "pointer", transition: "all 0.2s" }}
+              onMouseEnter={() => setHoveredSection("Cubicle 4")}
+              onMouseLeave={() => setHoveredSection(null)}
+              onClick={() => handleSectionClick("Cubicle 4")}
             />
 
             {/* Management Office 2 - Far right middle bottom */}
@@ -2286,37 +2953,188 @@ const FloorPlanSVG = () => {
           <div
             style={{
               marginTop: "20px",
-              background: "white",
-              borderRadius: "8px",
-              padding: "15px",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-              textAlign: "center",
+              background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+              borderRadius: "12px",
+              padding: "20px",
+              boxShadow: "0 4px 20px rgba(0, 103, 172, 0.1), 0 1px 3px rgba(0, 0, 0, 0.05)",
+              border: "1px solid rgba(0, 103, 172, 0.1)",
             }}
           >
-            <h3
-              style={{
-                fontSize: "18px",
-                fontWeight: "bold",
-                color: "#1a1a1a",
-                marginBottom: "5px",
-              }}
-            >
-              {hoveredSection}
-            </h3>
-            <p
-              style={{
-                fontSize: "14px",
-                color: isAvailable(hoveredSection) ? "#10b981" : "#ef4444",
-                fontWeight: "bold",
-              }}
-            >
-              {isAvailable(hoveredSection)
-                ? "✓ Available Now"
-                : "✗ Currently Booked"}
-            </p>
-            <p style={{ fontSize: "12px", color: "#666", marginTop: "5px" }}>
-              Click to book this area
-            </p>
+            {(() => {
+              // Check if this is a table to show detailed backend info
+              const isTable = hoveredSection.includes('Table') && 
+                             (hoveredSection.includes('UP') || hoveredSection.includes('DOWN'));
+              
+              if (isTable) {
+                const deskInfo = getDeskInfo(hoveredSection);
+                const available = isAvailable(hoveredSection);
+                
+                return (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '12px' }}>
+                      <div
+                        style={{
+                          width: '12px',
+                          height: '12px',
+                          borderRadius: '50%',
+                          background: available ? '#10b981' : '#ef4444',
+                          boxShadow: `0 0 10px ${available ? 'rgba(16, 185, 129, 0.5)' : 'rgba(239, 68, 68, 0.5)'}`,
+                          animation: 'pulse 2s infinite'
+                        }}
+                      />
+                      <h3
+                        style={{
+                          fontSize: "20px",
+                          fontWeight: "700",
+                          color: "#0f172a",
+                          margin: 0
+                        }}
+                      >
+                        {hoveredSection}
+                      </h3>
+                    </div>
+
+                    <div
+                      style={{
+                        display: 'inline-block',
+                        padding: '6px 16px',
+                        borderRadius: '8px',
+                        background: available 
+                          ? 'linear-gradient(135deg, #ecfdf5, #d1fae5)' 
+                          : 'linear-gradient(135deg, #fef2f2, #fee2e2)',
+                        border: available ? '1px solid #86efac' : '1px solid #fca5a5',
+                        marginBottom: '12px'
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontSize: "15px",
+                          color: available ? "#065f46" : "#991b1b",
+                          fontWeight: "700",
+                          margin: 0
+                        }}
+                      >
+                        {available ? "✓ Available Now" : (deskInfo.isAttendance ? "✗ Currently Occupied" : "✗ Currently Booked")}
+                      </p>
+                    </div>
+
+                    {/* Current Booking/Attendance Info */}
+                    {deskInfo.currentBooking && (
+                      <div
+                        style={{
+                          marginTop: '12px',
+                          padding: '12px',
+                          background: '#fef2f2',
+                          borderRadius: '8px',
+                          border: '1px solid #fca5a5',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <p style={{ fontSize: '13px', fontWeight: '600', color: '#dc2626', marginBottom: '6px' }}>
+                          {deskInfo.isAttendance ? '👤 Current Attendance:' : '📅 Current Booking:'}
+                        </p>
+                        <p style={{ fontSize: '12px', color: '#666', margin: '3px 0' }}>
+                          <strong>From:</strong> {new Date(deskInfo.currentBooking.start || deskInfo.currentBooking.startTime).toLocaleString()}
+                        </p>
+                        {(deskInfo.currentBooking.end || deskInfo.currentBooking.endTime) ? (
+                          <p style={{ fontSize: '12px', color: '#666', margin: '3px 0' }}>
+                            <strong>Until:</strong> {new Date(deskInfo.currentBooking.end || deskInfo.currentBooking.endTime).toLocaleString()}
+                          </p>
+                        ) : (
+                          <p style={{ fontSize: '12px', color: '#f59e0b', margin: '3px 0', fontStyle: 'italic' }}>
+                            <strong>Status:</strong> Active (no end time)
+                          </p>
+                        )}
+                        {deskInfo.currentBooking.status && (
+                          <p style={{ fontSize: '12px', color: '#666', margin: '3px 0' }}>
+                            <strong>Status:</strong> {deskInfo.currentBooking.status}
+                          </p>
+                        )}
+                        {deskInfo.currentBooking.userId && (
+                          <p style={{ fontSize: '12px', color: '#666', margin: '3px 0' }}>
+                            <strong>User ID:</strong> {deskInfo.currentBooking.userId}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Next Booking Info */}
+                    {!deskInfo.currentBooking && deskInfo.nextBooking && (
+                      <div
+                        style={{
+                          marginTop: '12px',
+                          padding: '12px',
+                          background: '#fffbeb',
+                          borderRadius: '8px',
+                          border: '1px solid #fde047',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <p style={{ fontSize: '13px', fontWeight: '600', color: '#d97706', marginBottom: '6px' }}>
+                          ⏰ Next {deskInfo.nextBooking.start ? 'Attendance:' : 'Booking:'}
+                        </p>
+                        <p style={{ fontSize: '12px', color: '#666', margin: '3px 0' }}>
+                          <strong>Starts:</strong> {new Date(deskInfo.nextBooking.start || deskInfo.nextBooking.startTime).toLocaleString()}
+                        </p>
+                        {(deskInfo.nextBooking.end || deskInfo.nextBooking.endTime) && (
+                          <p style={{ fontSize: '12px', color: '#666', margin: '3px 0' }}>
+                            <strong>Ends:</strong> {new Date(deskInfo.nextBooking.end || deskInfo.nextBooking.endTime).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Total Bookings Count */}
+                    {deskInfo.allBookings && deskInfo.allBookings.length > 0 && (
+                      <p style={{ fontSize: '12px', color: '#64748b', marginTop: '12px', fontWeight: '500' }}>
+                        📊 Total bookings today: {deskInfo.allBookings.length}
+                      </p>
+                    )}
+
+                    <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '12px', fontStyle: 'italic' }}>
+                      Click to {available ? 'book' : 'view details'}
+                    </p>
+
+                    <style>{`
+                      @keyframes pulse {
+                        0%, 100% { opacity: 1; transform: scale(1); }
+                        50% { opacity: 0.7; transform: scale(1.1); }
+                      }
+                    `}</style>
+                  </>
+                );
+              } else {
+                // Original display for non-table sections
+                return (
+                  <>
+                    <h3
+                      style={{
+                        fontSize: "18px",
+                        fontWeight: "bold",
+                        color: "#1a1a1a",
+                        marginBottom: "5px",
+                      }}
+                    >
+                      {hoveredSection}
+                    </h3>
+                    <p
+                      style={{
+                        fontSize: "14px",
+                        color: isAvailable(hoveredSection) ? "#10b981" : "#ef4444",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {isAvailable(hoveredSection)
+                        ? "✓ Available Now"
+                        : "✗ Currently Booked"}
+                    </p>
+                    <p style={{ fontSize: "12px", color: "#666", marginTop: "5px" }}>
+                      Click to book this area
+                    </p>
+                  </>
+                );
+              }
+            })()}
           </div>
         )}
       </div>
@@ -2325,6 +3143,7 @@ const FloorPlanSVG = () => {
       {selectedSection && (
         <BookingModal
           section={selectedSection}
+          deskId={selectedSection}
           isAvailable={isAvailable(selectedSection)}
           currentTime={currentTime}
           onClose={handleCloseModal}
