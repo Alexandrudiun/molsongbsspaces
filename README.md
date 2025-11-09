@@ -18,11 +18,11 @@ $ npm run dev
 ### Backend
 
 To run the backend the following environment variables need to be set up:
-- ``PORT``
-- ``MONGO_molson_desks``
-- ``MONGO_molson_user``
-- ``JWT_SECRET``
-- ``JWT_EXPIRES_IN``
+- `PORT` - the port where the app will run
+- `MONGO_molson_desks` - the connection string for the desks database
+- `MONGO_molson_user` - the connection string for the users database
+- `JWT_SECRET` - the secret used to sign the JWT tokens
+- `JWT_EXPIRES_IN` - the expiration time for the JWT tokens (e.g. 1d, 7d, etc.)
 
 If we want to run the project backend locally, starting from the project root we run
 the following commands:
@@ -35,9 +35,8 @@ $ npm run dev
 
 ## Tech Stack
 
-The project was made with the MERN Stack. The frontend was made with React 
-while the backend was made using ExpressJS and NextJS. The database of the 
-project is MongoDB (noSQL database).
+The frontend of the project is built with React and Tailwindcss, bundled with
+Vite. The backend is built with Node.js and Express, using MongoDB as the primary database.
 
 ## Demo Credentials
 
