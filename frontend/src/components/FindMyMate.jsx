@@ -11,7 +11,7 @@ function FindMyMate() {
   useEffect(() => {
     const fetchColleagues = async () => {
       try {
-        const usersResponse = await fetch('http://localhost:3000/api/user/all', {
+        const usersResponse = await fetch('https://molsongbsspaces.onrender.com/api/user/all', {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -21,7 +21,7 @@ function FindMyMate() {
 
         const colleaguesWithPositions = await Promise.all(
           users.map(async (user) => {
-            const positionResponse = await fetch('http://localhost:3000/api/user/positions', {
+            const positionResponse = await fetch('https://molsongbsspaces.onrender.com/api/user/positions', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
